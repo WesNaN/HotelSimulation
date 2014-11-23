@@ -1,5 +1,4 @@
 import java.io.Serializable;
-import java.sql.SQLException;
 
 public class User implements Serializable {
 
@@ -8,13 +7,13 @@ public class User implements Serializable {
     private final long UNIQUE_ID;
 
 
-    public User(String name, long unique_id) throws SQLException, ClassNotFoundException {
+    public User(String name, long unique_id) throws ConnectionError{
 
         if(!Simulation.ds.isConnected()){
             Simulation.ds.connect();
         }
 
-        this.user_id = Oracle.getUserID();
+        this.user_id = Simulation.ds.getUserID();
         this.name = name;
         UNIQUE_ID = unique_id;
 

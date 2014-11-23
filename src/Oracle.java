@@ -9,7 +9,7 @@ public class Oracle implements DataService {
     private static final Logger LOGGER = Logger.getLogger(
             Thread.currentThread().getStackTrace()[0].getClassName());
 
-    public void connect() throws SQLException {
+    public void connect(){
 
         LOGGER.warning("Not connected to database!");
         LOGGER.info("So I will try to connect...");
@@ -57,80 +57,132 @@ public class Oracle implements DataService {
         conn.close();
     }
 
-    public boolean isConnected() throws SQLException {
-        if (conn.isValid(10) || conn.isClosed()){
-            return false;
+    public boolean isConnected(){
+        try {
+            if (conn.isValid(10) || conn.isClosed()){
+                return false;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return true;
     }
 
-    public void addUser(User user) throws SQLException, ClassNotFoundException {
+    public void addUser(User user) throws ConnectionError {
 
         if(!isConnected()){
             connect();
         }
 
         //First check if user exists
-        PreparedStatement checkStatment = conn.prepareStatement(
-                "SELECT * FROM Users"
-        );
-        ResultSet users = checkStatment.executeQuery();
-
-        while(users.next()){
-            if(users.getInt(1) == user.getUserID()){
-                LOGGER.info("User already exists!");
-                return;
-            }
+        PreparedStatement checkStatment = null;
+        try {
+            checkStatment = conn.prepareStatement(
+                    "SELECT * FROM Users"
+            );
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot prepare a SQL statement", e);
+        }
+        ResultSet users = null;
+        try {
+            users = checkStatment.executeQuery();
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot execute a SQL statement", e);
         }
 
-        PreparedStatement insertStatment = conn.prepareStatement(
-                "INSERT INTO Users(user_id, name)" +
-                    "VALUES(?,?)"
-        );
-        insertStatment.setLong(1, user.getUserID());
-        insertStatment.setString(2, user.getName());
-        insertStatment.executeQuery();
+        try {
+            while(users.next()){
+                if(users.getInt(1) == user.getUserID()){
+                    LOGGER.info("User already exists!");
+                    return;
+                }
+            }
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot check if user already exists", e);
+        }
+
+        PreparedStatement insertStatment = null;
+        try {
+            insertStatment = conn.prepareStatement(
+                    "INSERT INTO Users(user_id, name)" +
+                        "VALUES(?,?)"
+            );
+            insertStatment.setLong(1, user.getUserID());
+            insertStatment.setString(2, user.getName());
+            insertStatment.executeQuery();
+
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot insert records into table", e);
+        }
 
     }
 
-    public void saveReservation(Reservation reservation) throws SQLException, ClassNotFoundException {
+    public void saveReservation(Reservation reservation) throws ConnectionError {
 
         if(!isConnected()){
             connect();
         }
 
         // check if reservation already exists
-        PreparedStatement checkStatement = conn.prepareStatement(
-                "SELECT * FROM Reservations"
-        );
-        ResultSet resSet = checkStatement.executeQuery();
+        PreparedStatement checkStatement = null;
+        try {
+            checkStatement = conn.prepareStatement(
+                    "SELECT * FROM Reservations"
+            );
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot prepare a SQL statement", e);
+        }
+        ResultSet resSet = null;
+        try {
+            resSet = checkStatement.executeQuery();
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot execute a SQL statement", e);
+        }
 
-        while (resSet.next()){
-            if (resSet.getInt(1) == reservation.getResID()){
-                syncReservation(reservation);
-                return;
+        try {
+            while (resSet.next()){
+                if (resSet.getInt(1) == reservation.getResID()){
+                    syncReservation(reservation);
+                    return;
+                }
             }
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot check if reservation already exists", e);
         }
 
         // if dates fit to room
-        PreparedStatement roomStatement = conn.prepareStatement(
-            "SELECT * FROM Rooms"
-        );
-        ResultSet roomSet = roomStatement.executeQuery();
+        PreparedStatement roomStatement = null;
+        try {
+            roomStatement = conn.prepareStatement(
+                "SELECT * FROM Rooms"
+            );
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot prepare a SQL statement", e);
+        }
+        try {
+            ResultSet roomSet = roomStatement.executeQuery();
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot execute a SQL statement", e);
+        }
 
         // Creating
-        PreparedStatement prst = conn.prepareStatement(
-                "INSERT INTO Reservations(res_id, start_date, end_date, user_id, status, room_id)" +
-                        "VALUES(?,?,?,?,?,?)"
-        );
-        prst.setLong(1, reservation.getResID());
-        prst.setDate(2, reservation.getStartDate());
-        prst.setDate(3, reservation.getEndDate());
-        prst.setLong(4, reservation.getUser().getUserID());
-        prst.setBoolean(5, true);
-        prst.setLong(6, reservation.getRoomID());
-        prst.executeQuery();
+        PreparedStatement prst = null;
+        try {
+            prst = conn.prepareStatement(
+                    "INSERT INTO Reservations(res_id, start_date, end_date, user_id, status, room_id)" +
+                            "VALUES(?,?,?,?,?,?)"
+            );
+            prst.setLong(1, reservation.getResID());
+            prst.setDate(2, reservation.getStartDate());
+            prst.setDate(3, reservation.getEndDate());
+            prst.setLong(4, reservation.getUser().getUserID());
+            prst.setBoolean(5, true);
+            prst.setLong(6, reservation.getRoomID());
+            prst.executeQuery();
 
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot insert records into table", e);
+        }
 
     }
 
@@ -150,36 +202,53 @@ public class Oracle implements DataService {
     }
 
 
-    public  void saveRoom(Room room) throws SQLException, ClassNotFoundException {
+    public  void saveRoom(Room room) throws ConnectionError {
 
         if(!isConnected()){
             connect();
         }
 
         // Check if room exists
-        PreparedStatement checkStatment = conn.prepareStatement(
-                "SELECT * FROM Rooms"
-        );
-        ResultSet rooms_list = checkStatment.executeQuery();
+        PreparedStatement checkStatment = null;
+        ResultSet rooms_list = null;
+        try {
+            checkStatment = conn.prepareStatement(
+                    "SELECT * FROM Rooms"
+            );
+            rooms_list = checkStatment.executeQuery();
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot prepare and execute a SQL statement", e);
+        }
+
 
         // ... if so sync it
-        while (rooms_list.next()){
-            if (rooms_list.getInt(1) == room.getRoomID()){
-                syncRoom(room.getRoomID(), room.getPriceForNight(), room.getBeds(), room.getRooms());
-                return;
+        try {
+            while (rooms_list.next()){
+                if (rooms_list.getInt(1) == room.getRoomID()){
+                    syncRoom(room.getRoomID(), room.getPriceForNight(), room.getBeds(), room.getRooms());
+                    return;
+                }
             }
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot check if room already exists", e);
         }
 
         // ... if not so create
-        PreparedStatement insertStatment = conn.prepareStatement(
-                "INSERT INTO Rooms(room_id, price, beds, rooms) " +
-                        "VALUES (?,?,?,?)"
-        );
-        insertStatment.setLong(1, room.getRoomID());
-        insertStatment.setDouble(2, room.getPriceForNight());
-        insertStatment.setInt(3, room.getBeds());
-        insertStatment.setInt(4, room.getRooms());
-        insertStatment.executeQuery();
+        PreparedStatement insertStatment = null;
+        try {
+            insertStatment = conn.prepareStatement(
+                    "INSERT INTO Rooms(room_id, price, beds, rooms) " +
+                            "VALUES (?,?,?,?)"
+            );
+            insertStatment.setLong(1, room.getRoomID());
+            insertStatment.setDouble(2, room.getPriceForNight());
+            insertStatment.setInt(3, room.getBeds());
+            insertStatment.setInt(4, room.getRooms());
+            insertStatment.executeQuery();
+
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot insert records into table", e);
+        }
     }
 
 
@@ -216,37 +285,55 @@ public class Oracle implements DataService {
         conn.commit();
     }
 
-    public static long getUserID() throws SQLException {
+    public long getUserID() throws ConnectionError{
 
-        PreparedStatement prst = conn.prepareStatement(
-                "SELECT seqUser.nextval from dual"
-        );
-        ResultSet set = prst.executeQuery();
-        set.next();
-        return set.getLong(1);
+        PreparedStatement prst = null;
+        try {
+            prst = conn.prepareStatement(
+                    "SELECT seqUser.nextval from dual"
+            );
+            ResultSet set = prst.executeQuery();
+            set.next();
+            return set.getLong(1);
+
+        } catch (SQLException e) {
+            throw new ConnectionError("SQL error while trying to get UserID", e);
+        }
     }
 
-    public static long getRoomID() throws SQLException {
+    public long getRoomID() throws ConnectionError{
 
-        PreparedStatement prst = conn.prepareStatement(
-                "SELECT room_seq.nextval from dual"
-        );
-        ResultSet set = prst.executeQuery();
-        set.next();
-        return set.getLong(1);
+        PreparedStatement prst = null;
+        ResultSet set = null;
+        try {
+            prst = conn.prepareStatement(
+                    "SELECT room_seq.nextval from dual"
+            );
+            set = prst.executeQuery();
+            set.next();
+            return set.getLong(1);
+
+        } catch (SQLException e) {
+            throw new ConnectionError("SQL error while trying to get RoomID", e);
+        }
     }
 
-    public static long getResID() throws SQLException {
+    public long getResID() throws ConnectionError {
 
-        PreparedStatement prst = conn.prepareStatement(
-                "SELECT res_seq.nextval from dual"
-        );
-        ResultSet set = prst.executeQuery();
-        set.next();
-        return set.getLong(1);
-    }
+        PreparedStatement prst = null;
+        ResultSet set = null;
+        try {
+            prst = conn.prepareStatement(
+                    "SELECT res_seq.nextval from dual"
+            );
+            set = prst.executeQuery();
+            set.next();
 
-    public void canConnect(){
+            return set.getLong(1);
+
+        } catch (SQLException e) {
+            throw new ConnectionError("SQL error while trying to get ResID", e);
+        }
 
     }
 }

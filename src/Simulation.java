@@ -1,17 +1,18 @@
-import java.io.IOException;
-import java.sql.SQLException;
 import java.sql.Date;
+import java.sql.SQLException;
 
 
 public class Simulation {
 
     static DataService ds;
 
-    public static void main(String[] args) throws ReservationException, IOException, SQLException, ClassNotFoundException {
+    public static void main(String[] args) throws ReservationException, ConnectionError, SQLException, ClassNotFoundException {
 
-        Oracle service = new Oracle();
-        service.connect();
-        service.cleanDatabase();
+//        Oracle service = new Oracle();
+//        service.connect();
+//        service.cleanDatabase();
+
+        FilesService service = new FilesService();
 
         ds = service;
 
@@ -24,15 +25,6 @@ public class Simulation {
         User user = new User("Kuba", 43512);
 
         Reservation res1 = new Reservation(user, new Date(2014, 12, 10), new Date(2014, 12, 14), room1.getRoomID());
-
-
-
-
-
-
-
-
-
 
 
     }

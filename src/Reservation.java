@@ -1,7 +1,7 @@
+import java.io.Serializable;
 import java.sql.Date;
-import java.sql.SQLException;
 
-public class Reservation{
+public class Reservation implements Serializable{
 
     private Date startDate;
     private Date endDate;
@@ -9,20 +9,19 @@ public class Reservation{
     private long res_id;
     private User user;
 
-    public Reservation(User user, Date start, Date end, long room_id) throws SQLException, ClassNotFoundException {
+    public Reservation(User user, Date start, Date end, long room_id) throws ConnectionError{
 
         if(!Simulation.ds.isConnected()){
             Simulation.ds.connect();
         }
 
-        res_id = Oracle.getResID();
+        res_id = Simulation.ds.getResID();
         this.user = user;
         this.startDate = start;
         this.endDate = end;
         this.room_id = room_id;
 
         Simulation.ds.saveReservation(this);
-
     }
 
 

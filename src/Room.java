@@ -1,13 +1,13 @@
-import java.sql.SQLException;
+import java.io.Serializable;
 
-public class Room{
+public class Room implements Serializable{
 
     private long room_id;
     private double priceForNight;
     private int rooms;
     private int beds;
 
-    public Room(int rooms, int beds, double price) throws SQLException, ClassNotFoundException {
+    public Room(int rooms, int beds, double price) throws ConnectionError {
 
         if(!Simulation.ds.isConnected()){
             Simulation.ds.connect();
@@ -16,10 +16,9 @@ public class Room{
         this.rooms = rooms;
         this.beds = beds;
         this.priceForNight = price;
-        room_id = Oracle.getRoomID();
+        room_id = Simulation.ds.getRoomID();
 
         Simulation.ds.saveRoom(this);
-
 
     }
 
