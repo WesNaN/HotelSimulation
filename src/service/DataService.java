@@ -1,3 +1,9 @@
+package service;
+
+import main.Reservation;
+import main.Room;
+import main.User;
+
 public interface DataService {
 
     public void addUser(User user) throws ConnectionError;

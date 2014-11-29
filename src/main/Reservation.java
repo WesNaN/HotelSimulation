@@ -1,3 +1,7 @@
+package main;
+
+import service.ConnectionError;
+
 import java.io.Serializable;
 import java.sql.Date;
 
@@ -9,7 +13,7 @@ public class Reservation implements Serializable{
     private long res_id;
     private User user;
 
-    public Reservation(User user, Date start, Date end, long room_id) throws ConnectionError{
+    public Reservation(User user, Date start, Date end, long room_id) throws ConnectionError {
 
         if(!Simulation.ds.isConnected()){
             Simulation.ds.connect();

@@ -1,3 +1,11 @@
+package service.db;
+
+import main.Reservation;
+import main.Room;
+import main.User;
+import service.ConnectionError;
+import service.DataService;
+
 import java.sql.*;
 import java.util.Properties;
 import java.util.logging.Logger;

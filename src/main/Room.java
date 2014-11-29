@@ -1,3 +1,7 @@
+package main;
+
+import service.ConnectionError;
+
 import java.io.Serializable;
 
 public class Room implements Serializable{

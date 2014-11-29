@@ -1,3 +1,11 @@
+package service.files;
+
+import main.Reservation;
+import main.Room;
+import main.User;
+import service.ConnectionError;
+import service.DataService;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -5,9 +13,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class FilesService implements DataService{
-
-
+public class FilesService implements DataService {
 
     @Override
     public void addUser(User user) throws ConnectionError {
