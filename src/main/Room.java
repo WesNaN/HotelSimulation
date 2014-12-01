@@ -1,6 +1,7 @@
 package main;
 
 import service.ConnectionError;
+import service.DataService;
 
 import java.io.Serializable;
 
@@ -11,18 +12,18 @@ public class Room implements Serializable{
     private int rooms;
     private int beds;
 
-    public Room(int rooms, int beds, double price) throws ConnectionError {
+    public Room(int rooms, int beds, double price, DataService service) throws ConnectionError {
 
-        if(!Simulation.ds.isConnected()){
-            Simulation.ds.connect();
+        if(!service.isConnected()){
+            service.connect();
         }
 
         this.rooms = rooms;
         this.beds = beds;
         this.priceForNight = price;
-        room_id = Simulation.ds.getRoomID();
+        room_id = service.getRoomID();
 
-        Simulation.ds.saveRoom(this);
+        service.saveRoom(this);
 
     }
 

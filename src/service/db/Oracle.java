@@ -66,6 +66,11 @@ public class Oracle implements DataService {
     }
 
     public boolean isConnected(){
+
+        if(conn == null){
+            return false;
+        }
+
         try {
             if (conn.isValid(10) || conn.isClosed()){
                 return false;

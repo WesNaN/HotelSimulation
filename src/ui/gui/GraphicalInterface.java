@@ -21,6 +21,7 @@ public class GraphicalInterface{
 
         JFrame frame = new JFrame();
         frame.setContentPane(panel);
+        this.app = app;
 
         createListeners();
 
@@ -34,7 +35,7 @@ public class GraphicalInterface{
         usersButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                UsersGui users = new UsersGui();
+                UsersGui users = new UsersGui(app);
             }
         });
         reservationsButton.addActionListener(new ActionListener() {

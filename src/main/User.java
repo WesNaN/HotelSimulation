@@ -1,6 +1,7 @@
 package main;
 
 import service.ConnectionError;
+import service.DataService;
 
 import java.io.Serializable;
 
@@ -11,17 +12,17 @@ public class User implements Serializable {
     private final long UNIQUE_ID;
 
 
-    public User(String name, long unique_id) throws ConnectionError {
+    public User(String name, long unique_id, DataService service) throws ConnectionError {
 
-        if(!Simulation.ds.isConnected()){
-            Simulation.ds.connect();
+        if(!service.isConnected()){
+            service.connect();
         }
 
-        this.user_id = Simulation.ds.getUserID();
+        this.user_id = service.getUserID();
         this.name = name;
         UNIQUE_ID = unique_id;
 
-        Simulation.ds.addUser(this);
+        service.addUser(this);
 
     }
 

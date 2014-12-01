@@ -1,17 +1,24 @@
 package main;
 
-import service.DataService;
 import service.files.FilesService;
 import ui.gui.GraphicalInterface;
 
 
 public class Simulation {
 
-    public static DataService ds;
+
 
     public static void main(String[] args) {
 
         FilesService fs = new FilesService();
+//        Oracle o = new Oracle();
+//        try {
+//            o.cleanDatabase();
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        }
         Application app = new Application(fs);
         GraphicalInterface gui = new GraphicalInterface(app);
 
