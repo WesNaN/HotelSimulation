@@ -2,47 +2,40 @@ package main;
 
 import service.ConnectionError;
 import service.DataService;
+import service.NumbersService;
 
 import java.io.Serializable;
 
 public class User implements Serializable {
 
     private String name;
-    private long user_id;
-    private final long UNIQUE_ID;
+    private String user_id;
 
+    private String number;
 
-    public User(String name, long unique_id, DataService service) throws ConnectionError {
+    public void setUser_id(String user_id) {
+        this.user_id = user_id;
+    }
 
-        if(!service.isConnected()){
-            service.connect();
+    public boolean userEquals(User user){
+
+        if(user.getName() == name || user.getUserID() == user_id){
+            return true;
         }
+        return false;
+    }
 
-        this.user_id = service.getUserID();
+    public User(String name, DataService service) throws ConnectionError {
         this.name = name;
-        UNIQUE_ID = unique_id;
-
-        service.addUser(this);
-
+        user_id = NumbersService.createNumberForUser(this);
     }
 
-    @Override
-    public String toString() {
-        return super.toString();
-    }
 
     public String getName() {
         return name;
     }
 
-    public long getUserID() {
+    public String getUserID() {
         return user_id;
     }
-
-    public long getUNIQUE_ID() {
-        return UNIQUE_ID;
-    }
-
-
-
 }

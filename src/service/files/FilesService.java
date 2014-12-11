@@ -11,12 +11,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class FilesService implements DataService {
 
     @Override
     public void addUser(User user) throws ConnectionError {
+
+        try {
+            if(userExist(user)){
+                throw new ConnectionError("User alredy exists", new Exception());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         File temp = new File("Data/Users/" + user.toString());
         if(!temp.exists()) {
@@ -46,6 +55,34 @@ public class FilesService implements DataService {
                 throw new ConnectionError("Cannot write to file", e);
             }
         }
+    }
+
+    public Object fromFile(File f) throws ClassNotFoundException, IOException {
+
+        InputStream file = null;
+        try {
+            file = new FileInputStream(f);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        InputStream buffer = new BufferedInputStream(file);
+        ObjectInput input = new ObjectInputStream(buffer);
+
+        return input.readObject();
+
+    }
+
+    public boolean userExist(User user) throws ConnectionError {
+
+        ArrayList<User> users = (ArrayList<User>) getUsers();
+
+        for(User u : users){
+            if(u.userEquals(user)){
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -124,7 +161,7 @@ public class FilesService implements DataService {
 
     }
 
-    public ArrayList<Reservation> getReservationsAsArray() throws IOException {
+    public Collection<Reservation> getReservationsAsArray() throws IOException {
 
         ArrayList<Reservation> reservations = new ArrayList<Reservation>();
 
@@ -143,7 +180,7 @@ public class FilesService implements DataService {
         return reservations;
     }
 
-    public ArrayList<Room> getRoomsAsArray() throws IOException {
+    public Collection<Room> getRoomsAsArray() throws IOException {
 
         ArrayList<Room> rooms = new ArrayList<Room>();
 
@@ -162,23 +199,32 @@ public class FilesService implements DataService {
 
     }
 
-    public ArrayList<User> getUsersAsArray() throws IOException {
+    public Collection<User> getUsers() throws ConnectionError{
 
         ArrayList<User> users = new ArrayList<User>();
 
-        Files.walk(Paths.get("Data/Users/")).forEach(filePath -> {
-            if (Files.isRegularFile(filePath)) {
-                try {
-                    users.add((User) objectFromFile(filePath));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
+        try {
+            Files.walk(Paths.get("Data/Users/")).forEach(filePath -> {
+                if (Files.isRegularFile(filePath)) {
+                    try {
+                        users.add((User) objectFromFile(filePath));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
                 }
-            }
-        });
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return users;
 
+    }
+
+    @Override
+    public boolean numberExists(String number) throws ConnectionError {
+        return false;
     }
 
     @Override
@@ -199,6 +245,11 @@ public class FilesService implements DataService {
     }
 
     @Override
+    public boolean userExists(User user) throws ConnectionError {
+        return false;
+    }
+
+    @Override
     public long getRoomID() throws ConnectionError {
         AtomicInteger seq = new AtomicInteger();
         return seq.incrementAndGet();
@@ -209,4 +260,6 @@ public class FilesService implements DataService {
         AtomicInteger seq = new AtomicInteger();
         return seq.incrementAndGet();
     }
+
+
 }

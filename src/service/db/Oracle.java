@@ -5,8 +5,11 @@ import main.Room;
 import main.User;
 import service.ConnectionError;
 import service.DataService;
+import service.NumbersService;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -91,37 +94,40 @@ public class Oracle implements DataService {
         PreparedStatement checkStatment = null;
         try {
             checkStatment = conn.prepareStatement(
-                    "SELECT * FROM Users"
+                    "SELECT 1 FROM Users u Where u.NUMER=?"
             );
+            checkStatment.setString(1, user.getUserID());
         } catch (SQLException e) {
             throw new ConnectionError("Cannot prepare a SQL statement", e);
         }
-        ResultSet users = null;
+        ResultSet usersResponse = null;
+        int a = -1;
         try {
-            users = checkStatment.executeQuery();
+            usersResponse = checkStatment.executeQuery();
+            a = usersResponse.getFetchSize();
+
         } catch (SQLException e) {
             throw new ConnectionError("Cannot execute a SQL statement", e);
         }
 
-        try {
-            while(users.next()){
-                if(users.getInt(1) == user.getUserID()){
-                    LOGGER.info("User already exists!");
-                    return;
-                }
-            }
-        } catch (SQLException e) {
-            throw new ConnectionError("Cannot check if user already exists", e);
+        if(a == 1){
+            LOGGER.warning("User already exists!");
+            return;
+        }
+        if(a == -1){
+            LOGGER.warning("Error while trying to add user");
+            throw new ConnectionError("Really unexpected error!", new SQLException());
         }
 
         PreparedStatement insertStatment = null;
         try {
             insertStatment = conn.prepareStatement(
-                    "INSERT INTO Users(user_id, name)" +
-                        "VALUES(?,?)"
+                    "INSERT INTO Users(id, name, numer)" +
+                        "VALUES(?,?,?)"
             );
-            insertStatment.setLong(1, user.getUserID());
+            insertStatment.setLong(1, getUserID());
             insertStatment.setString(2, user.getName());
+            insertStatment.setString(3, NumbersService.createNumberForUser(user));
             insertStatment.executeQuery();
 
         } catch (SQLException e) {
@@ -140,28 +146,29 @@ public class Oracle implements DataService {
         PreparedStatement checkStatement = null;
         try {
             checkStatement = conn.prepareStatement(
-                    "SELECT * FROM Reservations"
+                    "SELECT * FROM Reservations WHERE id=" + reservation.getResID()
             );
         } catch (SQLException e) {
             throw new ConnectionError("Cannot prepare a SQL statement", e);
         }
         ResultSet resSet = null;
+        int a = -1;
         try {
             resSet = checkStatement.executeQuery();
+            a = resSet.getFetchSize();
         } catch (SQLException e) {
             throw new ConnectionError("Cannot execute a SQL statement", e);
         }
 
-        try {
-            while (resSet.next()){
-                if (resSet.getInt(1) == reservation.getResID()){
-                    syncReservation(reservation);
-                    return;
-                }
+        if(a == 1){
+            try {
+                syncReservation(reservation);
+                return;
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException e) {
-            throw new ConnectionError("Cannot check if reservation already exists", e);
         }
+
 
         // if dates fit to room
         PreparedStatement roomStatement = null;
@@ -188,7 +195,7 @@ public class Oracle implements DataService {
             prst.setLong(1, reservation.getResID());
             prst.setDate(2, reservation.getStartDate());
             prst.setDate(3, reservation.getEndDate());
-            prst.setLong(4, reservation.getUser().getUserID());
+            prst.setLong(4, getCurrentUserID(reservation.getUser()));
             prst.setBoolean(5, true);
             prst.setLong(6, reservation.getRoomID());
             prst.executeQuery();
@@ -196,7 +203,6 @@ public class Oracle implements DataService {
         } catch (SQLException e) {
             throw new ConnectionError("Cannot insert records into table", e);
         }
-
     }
 
 
@@ -214,7 +220,6 @@ public class Oracle implements DataService {
 
     }
 
-
     public  void saveRoom(Room room) throws ConnectionError {
 
         if(!isConnected()){
@@ -222,11 +227,11 @@ public class Oracle implements DataService {
         }
 
         // Check if room exists
-        PreparedStatement checkStatment = null;
-        ResultSet rooms_list = null;
+        PreparedStatement checkStatment;
+        ResultSet rooms_list;
         try {
             checkStatment = conn.prepareStatement(
-                    "SELECT * FROM Rooms"
+                    "SELECT * FROM Rooms WHERE id=" + room.getRoomID()
             );
             rooms_list = checkStatment.executeQuery();
         } catch (SQLException e) {
@@ -234,13 +239,12 @@ public class Oracle implements DataService {
         }
 
 
-        // ... if so sync it
+        int a = -1;
         try {
-            while (rooms_list.next()){
-                if (rooms_list.getInt(1) == room.getRoomID()){
-                    syncRoom(room.getRoomID(), room.getPriceForNight(), room.getBeds(), room.getRooms());
-                    return;
-                }
+            a = rooms_list.getFetchSize();
+            if(a == 1) {
+                syncRoom(room.getRoomID(), room.getPriceForNight(), room.getBeds(), room.getRooms());
+                return;
             }
         } catch (SQLException e) {
             throw new ConnectionError("Cannot check if room already exists", e);
@@ -294,7 +298,6 @@ public class Oracle implements DataService {
         conn.createStatement().execute("DELETE FROM Users");
         conn.createStatement().execute("DELETE FROM Rooms");
 
-
         conn.commit();
     }
 
@@ -312,6 +315,99 @@ public class Oracle implements DataService {
         } catch (SQLException e) {
             throw new ConnectionError("SQL error while trying to get UserID", e);
         }
+    }
+
+    @Override
+    public Collection<User> getUsers() throws ConnectionError{
+        ArrayList<User> users = new ArrayList<User>();
+
+        PreparedStatement usersStatement;
+        ResultSet usersSet = null;
+        try {
+            usersStatement = conn.prepareStatement(
+                    "SELECT * FROM Users"
+            );
+            usersSet = usersStatement.executeQuery();
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot get users from database!", e);
+        }
+
+        try {
+            while(usersSet.next()){
+                User u = new User(usersSet.getString(2), this);
+                u.setUser_id(usersSet.getString(3));
+                users.add(u);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return users;
+    }
+
+    @Override
+    public boolean numberExists(String number) throws ConnectionError {
+
+        if(number.equals("")){
+            return true;
+        }
+
+        PreparedStatement stmt;
+        ResultSet set;
+        try {
+            stmt = conn.prepareStatement(
+                    "SELECT numer FROM USERS"
+            );
+            set = stmt.executeQuery();
+        } catch (SQLException e) {
+            throw new ConnectionError("Cannot list unique nubmers from database!", e);
+        }
+
+        try {
+            while(set.next()){
+                if(set.getString(3).equals(number)){
+                    return true;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+        return false;
+    }
+
+
+    @Override
+    public boolean userExists(User user) throws ConnectionError{
+
+        if(!isConnected()){
+            connect();
+        }
+
+        PreparedStatement usersStatement = null;
+        ResultSet usersSet = null;
+        try {
+            usersStatement = conn.prepareStatement(
+                    "SELECT 1 FROM Users WHERE " +
+                            "UPPER(Name) = UPPER(?)"
+            );
+            usersStatement.setString(1, user.getName());
+            usersSet = usersStatement.executeQuery();
+        } catch (SQLException e) {
+            throw new ConnectionError("SQL error while getting users from database", e);
+        }
+
+        try {
+            if(usersSet.next()){
+                return true;
+            } else {
+                return false;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return true;
     }
 
     public long getRoomID() throws ConnectionError{
@@ -347,6 +443,32 @@ public class Oracle implements DataService {
         } catch (SQLException e) {
             throw new ConnectionError("SQL error while trying to get ResID", e);
         }
-
     }
+
+    public long getCurrentUserID(User user) throws ConnectionError {
+
+        PreparedStatement usersStatement = null;
+        ResultSet usersSet = null;
+        try {
+            usersStatement = conn.prepareStatement(
+                    "SELECT 1 FROM Users WHERE Name = ?"
+            );
+            usersStatement.setString(1, user.getName());
+            usersSet = usersStatement.executeQuery();
+        } catch (SQLException e) {
+            throw new ConnectionError("SQL error while getting users from database", e);
+        }
+
+        try {
+            if(usersSet.getFetchSize() == 1){
+                return usersSet.getLong(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+
+
 }

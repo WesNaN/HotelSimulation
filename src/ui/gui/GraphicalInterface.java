@@ -15,6 +15,7 @@ public class GraphicalInterface{
     private JButton usersButton;
     private JButton roomsButton;
     private JButton hotelButton;
+    private JComboBox comboBox1;
 
 
     public GraphicalInterface(Application app){
@@ -32,17 +33,11 @@ public class GraphicalInterface{
     }
 
     public void createListeners(){
-        usersButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                UsersGui users = new UsersGui(app);
-            }
+        usersButton.addActionListener(e -> {
+            UsersGui users = new UsersGui(app);
         });
-        reservationsButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                ReservationsGui reservations = new ReservationsGui();
-            }
+        reservationsButton.addActionListener(e -> {
+            ReservationsGui reservations = new ReservationsGui();
         });
         roomsButton.addActionListener(new ActionListener() {
             @Override

@@ -6,19 +6,21 @@ import service.ConnectionError;
 import service.DataService;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.util.ArrayList;
 
 public class UsersGui {
     Application app;
+    DataService service;
     private JButton addButton;
     private JButton removeButton;
     private JPanel panel;
     private JButton showButton;
+    private JFrame frame = new JFrame();
 
     public UsersGui(Application app) {
-        JFrame frame = new JFrame();
         this.app = app;
+        service = app.getDataService();
+
 
         createListeners();
 
@@ -26,26 +28,74 @@ public class UsersGui {
         frame.setResizable(false);
         frame.pack();
         frame.setVisible(true);
+
     }
+
 
     public void createListeners(){
 
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                DataService service = app.getDataService();
-                User user = null;
+        addButton.addActionListener(e -> {
+            User user = null;
 
-                String name = JOptionPane.showInputDialog("Enter name");
-                long uniqueID = Long.parseLong(JOptionPane.showInputDialog("Enter unique ID"));
+            String name = JOptionPane.showInputDialog("Enter name");
+            //long uniqueID = Long.parseLong(JOptionPane.showInputDialog("Enter unique ID"));
 
-                try {
-                    user = new User(name, uniqueID, service);
-                    service.addUser(user);
-                } catch (ConnectionError connectionError) {
-                    connectionError.printStackTrace();
-                }
+            boolean success = false;
+
+            try {
+                user = new User(name, service);
+            } catch (ConnectionError connectionError) {
+                connectionError.printStackTrace();
             }
+
+            try {
+                if(!service.userExists(user)){
+                        try {
+
+                            service.addUser(user);
+                            success = true;
+                        } catch (ConnectionError connectionError) {
+                            JOptionPane.showMessageDialog(frame, "Error occurred while adding user!");
+                            connectionError.printStackTrace();
+                        }
+                    } else {
+                        success = false;
+                        JOptionPane.showMessageDialog(frame, "Users already exists!");
+                    }
+            } catch (ConnectionError connectionError) {
+                connectionError.printStackTrace();
+            }
+
+            if(success){
+                JOptionPane.showMessageDialog(frame, "Adding user successful");
+            }
+        });
+
+        showButton.addActionListener(e -> {
+            ArrayList<User> users = null;
+            try {
+                users = (ArrayList<User>) service.getUsers();
+            } catch (ConnectionError connectionError) {
+                connectionError.printStackTrace();
+            }
+
+
+
+            StringBuilder sb = new StringBuilder();
+            for(User u : users){
+                sb.append(u.toString() + "\n");
+            }
+
+            JOptionPane.showMessageDialog(frame, sb);
+
+
+
+            JFrame show = new JFrame();
+            show.setContentPane(panel);
+            show.setResizable(false);
+            show.pack();
+            show.setVisible(true);
+
         });
     }
 }
